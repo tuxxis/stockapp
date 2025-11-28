@@ -9,8 +9,8 @@ try:
         # 1. Get the raw text from secrets
         raw_json = st.secrets["GOOGLE_CREDENTIALS_JSON"]
         
-        # 2. Parse it with "strict=False" to forgive newlines
-        creds_dict = json.loads(raw_json, strict=False)
+        # 2. Parse the JSON string
+        creds_dict = json.loads(raw_json)
         
         # 3. Write it to cred.json so brain.py can find it
         with open("cred.json", "w") as f:
