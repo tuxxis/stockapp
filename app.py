@@ -70,9 +70,15 @@ if not st.session_state['authenticated']:
     st.stop()
 
 # --- SESSION STATE ---
-if 'warehouse_id' not in st.session_state:
-    st.session_state['warehouse_id'] = None
-# ... (all other session state variables remain)
+session_defaults = {
+    "warehouse_id": None,
+    "warehouse_name": None,
+    "scan_counter": 0,
+    "force_create": False,
+}
+for key, value in session_defaults.items():
+    if key not in st.session_state:
+        st.session_state[key] = value
 
 # --- FUNCTIONS (Select Warehouse, Reset Camera remain) ---
 def select_warehouse():
@@ -207,4 +213,3 @@ else:
                         st.toast("✅ Saved!", icon="✅")
                         time.sleep(1)
                         reset_camera()
-
