@@ -19,7 +19,7 @@ st.markdown("""
     
     /* 2. FORCE CAMERA WIDGET TO FILL SCREEN AND SET MIN HEIGHT */
     div[data-testid*="stCameraInput"] {
-        width: min(90vw, 420px) !important; /* keep it wide but screen-safe */
+        width: min(80vw, 400px) !important; /* keep it wide but screen-safe */
         margin: 0 auto 0.5rem auto !important;
     }
 
@@ -218,3 +218,4 @@ else:
 
 # Invisible spacer keeps page scrollable so camera doesn't auto-shrink
 st.markdown("<div style='height:25vh; opacity:0;'>.</div>", unsafe_allow_html=True)
+
