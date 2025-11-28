@@ -46,7 +46,7 @@ st.markdown("""
 
     /* 5. Ensure page taller than viewport so camera keeps its size */
     section.main > div.block-container {
-        min-height: 180vh !important;
+        min-height: 130vh !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -216,3 +216,5 @@ else:
                         time.sleep(1)
                         reset_camera()
 
+# Invisible spacer keeps page scrollable so camera doesn't auto-shrink
+st.markdown("<div style='height:25vh; opacity:0;'>.</div>", unsafe_allow_html=True)
