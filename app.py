@@ -24,11 +24,11 @@ st.markdown("""
         margin-bottom: 0.5rem;
     }
 
-    /* Force a cinematic 16:9 frame while keeping full width */
+    /* Force a tall portrait frame while keeping full width */
     div[data-testid*="stCameraInput"] video {
         width: 100% !important;
         height: auto !important;
-        aspect-ratio: 16 / 9 !important;
+        aspect-ratio: 9 / 16 !important;
         object-fit: cover !important;
         border-radius: 0 !important;
     }
