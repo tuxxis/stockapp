@@ -19,7 +19,7 @@ st.markdown("""
     
     /* 2. FORCE CAMERA WIDGET TO FILL SCREEN AND SET MIN HEIGHT */
     div[data-testid*="stCameraInput"] {
-        width: min(80vw, 420px) !important; /* keep it wide but screen-safe */
+        width: min(90vw, 420px) !important; /* keep it wide but screen-safe */
         margin: 0 auto 0.5rem auto !important;
     }
 
@@ -112,8 +112,6 @@ if st.session_state['warehouse_id'] is None:
     select_warehouse()
 else:
     # 1. THE CAMERA IS NOW AT THE TOP
-    st.info("📷 Ready for next item")
-    # Hide the text to maximize space
     img_file = st.camera_input("Scanner", key=f"cam_{st.session_state['scan_counter']}", label_visibility="collapsed")
 
     # 2. MOVE CONTEXT AND CHANGE BUTTON BELOW THE SCANNER
@@ -212,4 +210,3 @@ else:
                         st.toast("✅ Saved!", icon="✅")
                         time.sleep(1)
                         reset_camera()
-
