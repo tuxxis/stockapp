@@ -19,12 +19,11 @@ st.markdown("""
     
     /* 2. FORCE CAMERA WIDGET TO FILL SCREEN AND SET MIN HEIGHT */
     div[data-testid*="stCameraInput"] {
-        width: 100% !important;
-        max-width: none !important;
-        margin-bottom: 0.5rem;
+        width: min(90vw, 420px) !important; /* keep it wide but screen-safe */
+        margin: 0 auto 0.5rem auto !important;
     }
 
-    /* Force a tall portrait frame while keeping full width */
+    /* Force a tall portrait frame while keeping consistent ratio */
     div[data-testid*="stCameraInput"] video {
         width: 100% !important;
         height: auto !important;
