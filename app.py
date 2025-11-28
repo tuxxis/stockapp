@@ -21,16 +21,16 @@ st.markdown("""
     div[data-testid*="stCameraInput"] {
         width: 100% !important;
         max-width: none !important;
-        min-height: 50vh !important; /* Allocation for video feed */
         margin-bottom: 0.5rem;
     }
-    
+
+    /* Force a cinematic 16:9 frame while keeping full width */
     div[data-testid*="stCameraInput"] video {
         width: 100% !important;
-        max-width: none !important;
         height: auto !important;
+        aspect-ratio: 16 / 9 !important;
         object-fit: cover !important;
-        border-radius: 0px !important;
+        border-radius: 0 !important;
     }
 
     /* 3. MAKE BUTTONS HUGE & FULL WIDTH */
