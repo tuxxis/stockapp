@@ -51,6 +51,12 @@ st.markdown("""
 if 'authenticated' not in st.session_state:
     st.session_state['authenticated'] = False
 
+if 'warehouse_id' not in st.session_state:
+    st.session_state['warehouse_id'] = None
+
+if 'force_create' not in st.session_state:
+    st.session_state['force_create'] = False
+
 def check_password():
     if st.session_state['password_input'] == config.APP_PASSWORD:
         st.session_state['authenticated'] = True
@@ -201,3 +207,4 @@ else:
                         st.toast("✅ Saved!", icon="✅")
                         time.sleep(1)
                         reset_camera()
+
