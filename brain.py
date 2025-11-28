@@ -2,6 +2,7 @@ import config
 import difflib
 import json
 import os
+import re
 import gspread
 from google.oauth2 import service_account
 from google.cloud import vision
@@ -88,7 +89,37 @@ def analyze_image(image_bytes):
         response_format={"type": "json_object"}
     )
     
-    data = json.loads(gpt_response.choices[0].message.content)
+    # Clean the response: remove control characters and extract JSON
+    response_text = gpt_response.choices[0].message.content
+    
+    # Remove control characters except newlines and tabs (which are valid in JSON strings)
+    # Remove control characters (0x00-0x1F) except \n (0x0A), \r (0x0D), and \t (0x09)
+    cleaned_text = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F]', '', response_text)
+    
+    # Try to extract JSON if it's wrapped in markdown code blocks
+    json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', cleaned_text, re.DOTALL)
+    if json_match:
+        cleaned_text = json_match.group(1)
+    else:
+        # Try to find JSON object in the text
+        json_match = re.search(r'\{.*\}', cleaned_text, re.DOTALL)
+        if json_match:
+            cleaned_text = json_match.group(0)
+    
+    try:
+        data = json.loads(cleaned_text)
+    except json.JSONDecodeError as e:
+        print(f"JSON Parse Error: {e}")
+        print(f"Response text: {response_text[:500]}")  # Print first 500 chars for debugging
+        # Return a default structure if parsing fails
+        return {
+            "manufacturer": "",
+            "ref": "",
+            "name": "",
+            "details": "",
+            "qty": "1"
+        }
+    
     data['manufacturer'] = find_best_manufacturer(data['manufacturer'])
     return data
 
