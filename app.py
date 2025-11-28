@@ -19,7 +19,7 @@ st.markdown("""
     
     /* 2. FORCE CAMERA WIDGET TO FILL SCREEN AND SET MIN HEIGHT */
     div[data-testid*="stCameraInput"] {
-        width: min(80vw, 420px) !important; /* keep it wide but screen-safe */
+        width: min(90vw, 420px) !important; /* keep it wide but screen-safe */
         margin: 0 auto 0.5rem auto !important;
     }
 
@@ -43,6 +43,11 @@ st.markdown("""
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
+
+    /* 5. Ensure page taller than viewport so camera keeps its size */
+    section.main > div.block-container {
+        min-height: 130vh !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -210,4 +215,3 @@ else:
                         st.toast("✅ Saved!", icon="✅")
                         time.sleep(1)
                         reset_camera()
-
