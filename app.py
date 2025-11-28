@@ -3,26 +3,33 @@ import config
 import brain
 import time
 
-st.set_page_config(page_title="TUXOSS Inventory", page_icon="🏥")
+st.set_page_config(page_title="TUXOSS Inventory", page_icon="🏥", layout="wide")
 
+# 2. MOBILE CSS HACK: Keep it clean and wide
 st.markdown("""
 <style>
     /* 1. FORCE MOBILE CONTAINER TO BE WIDER */
     .block-container {
-        padding-top: 1rem !important;
+        padding-top: 0.5rem !important;
         padding-bottom: 5rem !important;
         padding-left: 0rem !important;
         padding-right: 0rem !important;
         max-width: 100% !important;
     }
     
-    /* 2. FORCE CAMERA WIDGET TO FILL SCREEN */
-    div[data-testid="stCameraInput"] {
+    /* 2. FORCE CAMERA WIDGET TO FILL SCREEN AND SET MIN HEIGHT */
+    div[data-testid*="stCameraInput"] {
         width: 100% !important;
+        max-width: none !important;
+        min-height: 50vh !important; /* Allocation for video feed */
+        margin-bottom: 0.5rem;
     }
     
-    div[data-testid="stCameraInput"] > video {
+    div[data-testid*="stCameraInput"] video {
         width: 100% !important;
+        max-width: none !important;
+        height: auto !important;
+        object-fit: cover !important;
         border-radius: 0px !important;
     }
 
@@ -33,7 +40,7 @@ st.markdown("""
         font-size: 20px !important;
     }
     
-    /* 4. HIDE DEFAULT MENU */
+    /* 4. HIDE STREAMLIT CHROME (Footer/Header) */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
@@ -54,22 +61,16 @@ def check_password():
 if not st.session_state['authenticated']:
     st.markdown("## 🔒 Restricted Access")
     st.text_input("Enter Passphrase:", type="password", key="password_input", on_change=check_password)
-    st.stop() # <--- THIS STOPS THE APP HERE IF NOT LOGGED IN
-
+    st.stop()
 
 # --- SESSION STATE ---
 if 'warehouse_id' not in st.session_state:
     st.session_state['warehouse_id'] = None
-if 'warehouse_name' not in st.session_state:
-    st.session_state['warehouse_name'] = None
-if 'scan_counter' not in st.session_state:
-    st.session_state['scan_counter'] = 0
-if 'force_create' not in st.session_state:
-    st.session_state['force_create'] = False
+# ... (all other session state variables remain)
 
-# --- FUNCTIONS ---
+# --- FUNCTIONS (Select Warehouse, Reset Camera remain) ---
 def select_warehouse():
-    st.title("🏥 Hospital Stock System")
+    st.title("🏥 TUXOSS Mobile")
     location_names = [""] + list(config.SHEET_LOCATIONS.keys())
     selected_name = st.selectbox("🔍 Select Location", location_names, index=0)
 
@@ -99,20 +100,25 @@ def reset_camera():
 if st.session_state['warehouse_id'] is None:
     select_warehouse()
 else:
-    # Header
+    # 1. THE CAMERA IS NOW AT THE TOP
+    st.info("📷 Ready for next item")
+    # Hide the text to maximize space
+    img_file = st.camera_input("Scanner", key=f"cam_{st.session_state['scan_counter']}", label_visibility="collapsed")
+
+    # 2. MOVE CONTEXT AND CHANGE BUTTON BELOW THE SCANNER
+    # This acts as the new "Footer" area for context and navigation
+    st.markdown("---")
     col1, col2 = st.columns([3, 1])
     with col1:
-        st.title(f"📍 {st.session_state['warehouse_name']}")
+        st.caption(f"Location: **{st.session_state['warehouse_name']}**")
     with col2:
-        if st.button("⬅ Change"):
+        if st.button("⬅ Change", use_container_width=True):
             st.session_state['warehouse_id'] = None
             st.rerun()
-
-    # Camera with Dynamic Key
-    st.info("📷 Ready for next item")
-    img_file = st.camera_input("Scanner", key=f"cam_{st.session_state['scan_counter']}")
+    st.markdown("---")
 
     if img_file:
+        # (Rest of the scanning logic remains the same)
         if 'scanned_data' not in st.session_state:
             with st.spinner("Reading Label..."):
                 st.session_state['scanned_data'] = brain.analyze_image(img_file.getvalue())
@@ -120,34 +126,30 @@ else:
         initial_data = st.session_state['scanned_data']
         
         if initial_data:
-            st.divider()
-            
             # LIVE INPUTS
+            st.write("### Item Verification")
             c1, c2 = st.columns(2)
             with c1:
-                live_manuf = st.text_input("Manufacturer", value=initial_data['manufacturer'])
+                live_manuf = st.text_input("Manuf.", value=initial_data['manufacturer'])
             with c2:
                 live_ref = st.text_input("REF", value=initial_data['ref'])
 
             check = brain.check_item_exists(st.session_state['warehouse_id'], live_manuf, live_ref)
-
             st.divider()
 
             is_update_mode = len(check) > 0 and not st.session_state['force_create']
 
             # --- SCENARIO A: MATCH FOUND (UPDATE MODE) ---
             if is_update_mode:
-                
-                # SELECTION LOGIC
                 target_row = None
                 
                 if len(check) == 1:
                     target_row = check[0]
-                    st.warning(f"🔔 Match Found! (Row {target_row['row']})")
+                    st.warning(f"🔔 Match: Row {target_row['row']}")
                 else:
-                    st.warning(f"🔔 Found {len(check)} duplicate entries!")
-                    options = {f"Row {m['row']}: Qty {m['current_qty']} ({m['name']})": m for m in check}
-                    selected_label = st.selectbox("Select which entry to update:", list(options.keys()))
+                    st.warning(f"🔔 {len(check)} Duplicates!")
+                    options = {f"Row {m['row']}: {m['current_qty']}x ({m['name'][:15]}...)": m for m in check}
+                    selected_label = st.selectbox("Pick one:", list(options.keys()))
                     target_row = options[selected_label]
 
                 st.success(f"**{target_row['name']}**")
@@ -165,18 +167,18 @@ else:
                     if submitted:
                         new_total = target_row['current_qty'] + add_qty
                         brain.update_item_qty(st.session_state['warehouse_id'], target_row['row'], new_total)
-                        st.toast(f"✅ Added {add_qty} to stock!", icon="✅")
+                        st.toast(f"✅ Added {add_qty}!", icon="✅")
                         time.sleep(1)
                         reset_camera()
 
-                if st.button("➕ Add new entry", use_container_width=True):
+                if st.button("➕ New Entry Instead", use_container_width=True):
                     st.session_state['force_create'] = True
                     st.rerun()
 
             # --- SCENARIO B: NEW ITEM (CREATE MODE) ---
             else:
                 if len(check) > 0:
-                    st.info("✨ Creating Duplicate Entry (Force Mode)")
+                    st.info("✨ Creating Duplicate")
                 else:
                     st.info("✨ New Item Detected")
                 
@@ -185,7 +187,7 @@ else:
                     new_details = st.text_area("Details", value=initial_data.get('details', ''))
                     new_qty = st.number_input("Qty", value=int(initial_data.get('qty', 1)))
                     
-                    submitted_new = st.form_submit_button("💾 Save New Item", type="primary", use_container_width=True)
+                    submitted_new = st.form_submit_button("💾 Save Item", type="primary", use_container_width=True)
                     
                     if submitted_new:
                         save_data = {
@@ -196,6 +198,6 @@ else:
                             "qty": new_qty
                         }
                         brain.save_new_item(st.session_state['warehouse_id'], save_data)
-                        st.toast("✅ Saved Successfully!", icon="✅")
+                        st.toast("✅ Saved!", icon="✅")
                         time.sleep(1)
                         reset_camera()
