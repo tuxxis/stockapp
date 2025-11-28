@@ -3,27 +3,40 @@ import config
 import brain
 import time
 
-# 1. UI CONFIG: Set layout to "wide" to use full screen
-st.set_page_config(page_title="TUXOSS Inventory", page_icon="🏥", layout="wide")
+st.set_page_config(page_title="TUXOSS Inventory", page_icon="🏥")
 
-# 2. MOBILE CSS HACK: Remove wasted whitespace
 st.markdown("""
 <style>
-    /* Remove top padding */
+    /* 1. FORCE MOBILE CONTAINER TO BE WIDER */
     .block-container {
-        padding-top: 1rem;
-        padding-bottom: 5rem;
-        padding-left: 0.5rem;
-        padding-right: 0.5rem;
+        padding-top: 1rem !important;
+        padding-bottom: 5rem !important;
+        padding-left: 0rem !important;
+        padding-right: 0rem !important;
+        max-width: 100% !important;
     }
-    /* Make the camera widget fill the width */
+    
+    /* 2. FORCE CAMERA WIDGET TO FILL SCREEN */
     div[data-testid="stCameraInput"] {
-        width: 100%;
+        width: 100% !important;
     }
-    /* Make buttons huge and touch-friendly */
+    
+    div[data-testid="stCameraInput"] > video {
+        width: 100% !important;
+        border-radius: 0px !important;
+    }
+
+    /* 3. MAKE BUTTONS HUGE & FULL WIDTH */
     button {
-        height: 3rem !important; 
+        height: 3.5rem !important;
+        width: 100% !important;
+        font-size: 20px !important;
     }
+    
+    /* 4. HIDE DEFAULT MENU */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -41,7 +54,8 @@ def check_password():
 if not st.session_state['authenticated']:
     st.markdown("## 🔒 Restricted Access")
     st.text_input("Enter Passphrase:", type="password", key="password_input", on_change=check_password)
-    st.stop()
+    st.stop() # <--- THIS STOPS THE APP HERE IF NOT LOGGED IN
+
 
 # --- SESSION STATE ---
 if 'warehouse_id' not in st.session_state:
@@ -55,7 +69,7 @@ if 'force_create' not in st.session_state:
 
 # --- FUNCTIONS ---
 def select_warehouse():
-    st.title("🏥 TUXOSS Mobile")
+    st.title("🏥 Hospital Stock System")
     location_names = [""] + list(config.SHEET_LOCATIONS.keys())
     selected_name = st.selectbox("🔍 Select Location", location_names, index=0)
 
@@ -85,18 +99,18 @@ def reset_camera():
 if st.session_state['warehouse_id'] is None:
     select_warehouse()
 else:
-    # Header - Compact
+    # Header
     col1, col2 = st.columns([3, 1])
     with col1:
-        st.caption(f"📍 {st.session_state['warehouse_name']}")
+        st.title(f"📍 {st.session_state['warehouse_name']}")
     with col2:
-        if st.button("⬅", use_container_width=True):
+        if st.button("⬅ Change"):
             st.session_state['warehouse_id'] = None
             st.rerun()
 
     # Camera with Dynamic Key
-    # Note: label_visibility="collapsed" hides the "Scanner" text to save space
-    img_file = st.camera_input("Scanner", key=f"cam_{st.session_state['scan_counter']}", label_visibility="collapsed")
+    st.info("📷 Ready for next item")
+    img_file = st.camera_input("Scanner", key=f"cam_{st.session_state['scan_counter']}")
 
     if img_file:
         if 'scanned_data' not in st.session_state:
@@ -111,7 +125,7 @@ else:
             # LIVE INPUTS
             c1, c2 = st.columns(2)
             with c1:
-                live_manuf = st.text_input("Manuf.", value=initial_data['manufacturer'])
+                live_manuf = st.text_input("Manufacturer", value=initial_data['manufacturer'])
             with c2:
                 live_ref = st.text_input("REF", value=initial_data['ref'])
 
@@ -123,51 +137,55 @@ else:
 
             # --- SCENARIO A: MATCH FOUND (UPDATE MODE) ---
             if is_update_mode:
+                
+                # SELECTION LOGIC
                 target_row = None
+                
                 if len(check) == 1:
                     target_row = check[0]
-                    st.warning(f"🔔 Match: Row {target_row['row']}")
+                    st.warning(f"🔔 Match Found! (Row {target_row['row']})")
                 else:
-                    st.warning(f"🔔 {len(check)} Duplicates!")
-                    options = {f"Row {m['row']}: {m['current_qty']}x ({m['name'][:15]}...)": m for m in check}
-                    selected_label = st.selectbox("Pick one:", list(options.keys()))
+                    st.warning(f"🔔 Found {len(check)} duplicate entries!")
+                    options = {f"Row {m['row']}: Qty {m['current_qty']} ({m['name']})": m for m in check}
+                    selected_label = st.selectbox("Select which entry to update:", list(options.keys()))
                     target_row = options[selected_label]
 
-                st.info(f"**{target_row['name']}**")
+                st.success(f"**{target_row['name']}**")
                 
+                # UPDATE FORM
                 with st.form("update_stock_form"):
                     col_a, col_b = st.columns(2)
                     with col_a: 
                         st.metric("In Stock", target_row['current_qty'])
                     with col_b: 
-                        add_qty = st.number_input("Add", value=int(initial_data.get('qty', 1)), min_value=1)
+                        add_qty = st.number_input("Add Quantity", value=int(initial_data.get('qty', 1)), min_value=1)
 
-                    submitted = st.form_submit_button("✅ Update Stock", type="primary", use_container_width=True)
+                    submitted = st.form_submit_button("✅ Confirm Update", type="primary", use_container_width=True)
                     
                     if submitted:
                         new_total = target_row['current_qty'] + add_qty
                         brain.update_item_qty(st.session_state['warehouse_id'], target_row['row'], new_total)
-                        st.toast(f"✅ Added {add_qty}!", icon="✅")
+                        st.toast(f"✅ Added {add_qty} to stock!", icon="✅")
                         time.sleep(1)
                         reset_camera()
 
-                if st.button("➕ New Entry Instead", use_container_width=True):
+                if st.button("➕ Add new entry", use_container_width=True):
                     st.session_state['force_create'] = True
                     st.rerun()
 
             # --- SCENARIO B: NEW ITEM (CREATE MODE) ---
             else:
                 if len(check) > 0:
-                    st.info("✨ Creating Duplicate")
+                    st.info("✨ Creating Duplicate Entry (Force Mode)")
                 else:
-                    st.info("✨ New Item")
+                    st.info("✨ New Item Detected")
                 
                 with st.form("new_item_form"):
                     new_name = st.text_input("Name", value=initial_data['name'])
                     new_details = st.text_area("Details", value=initial_data.get('details', ''))
                     new_qty = st.number_input("Qty", value=int(initial_data.get('qty', 1)))
                     
-                    submitted_new = st.form_submit_button("💾 Save Item", type="primary", use_container_width=True)
+                    submitted_new = st.form_submit_button("💾 Save New Item", type="primary", use_container_width=True)
                     
                     if submitted_new:
                         save_data = {
@@ -178,6 +196,6 @@ else:
                             "qty": new_qty
                         }
                         brain.save_new_item(st.session_state['warehouse_id'], save_data)
-                        st.toast("✅ Saved!", icon="✅")
+                        st.toast("✅ Saved Successfully!", icon="✅")
                         time.sleep(1)
                         reset_camera()
