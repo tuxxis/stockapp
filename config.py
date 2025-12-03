@@ -1,11 +1,23 @@
 import os
 import json
-import streamlit as st
 
-# 1. SETUP: Are we on the Cloud or Local?
+# --- Import Streamlit conditionally to prevent crashes on local runs ---
+try:
+    import streamlit as st
+except ImportError:
+    st = None
+
+# 1. GUARANTEE VARIABLE EXISTENCE (Anti-Crash Measure)
+# Define variables first so 'brain.py' doesn't crash on import if loading fails.
+GOOGLE_CREDENTIALS_PATH = None
+OPENAI_KEY = None
+APP_PASSWORD = None
+
+
+# 2. SETUP: Load Environment (Cloud vs Local)
 try:
     # --- CLOUD MODE (Streamlit) ---
-    if "GOOGLE_CREDENTIALS_JSON" in st.secrets:
+    if st and "GOOGLE_CREDENTIALS_JSON" in st.secrets:
         # 1. Get the raw text from secrets
         raw_json = st.secrets["GOOGLE_CREDENTIALS_JSON"]
         
@@ -20,7 +32,7 @@ try:
         OPENAI_KEY = st.secrets["OPENAI_API_KEY"]
         APP_PASSWORD = st.secrets["APP_PASSWORD"]
         
-    # --- LOCAL MODE (Laptop) ---
+    # --- LOCAL MODE (Laptop/VPS) ---
     else:
         # Only import dotenv locally
         from dotenv import load_dotenv
@@ -30,14 +42,22 @@ try:
         OPENAI_KEY = os.getenv("OPENAI_API_KEY")
         APP_PASSWORD = os.getenv("APP_PASSWORD")
 
-except (FileNotFoundError, AttributeError, ImportError, json.JSONDecodeError):
-    # Fallback/Safety net
+except Exception as e:
+    # This catches errors like ImportErrors or FileNotFoundError
+    # The program continues, but variables remain None, which is fine for the crash prevention
     pass
 
-# 2. CONSTANTS
+# Ensure variables have default values if they're still None
+if GOOGLE_CREDENTIALS_PATH is None:
+    GOOGLE_CREDENTIALS_PATH = "cred.json"
+if APP_PASSWORD is None:
+    APP_PASSWORD = "Tryitout0-0"  # Default fallback password
+
+
+# 3. CONSTANTS
 MANUFACTURERS_FILE = "cleaned_manufacturers.txt"
 
-# 3. SHEET LOCATIONS
+# 4. SHEET LOCATIONS
 SHEET_LOCATIONS = {
     "Test": "1vcHtQK2Uy7_Gan8sntTgS5axJofceMn6V02Ks_iKww4",
     # Add your real rooms here later

@@ -17,19 +17,29 @@ st.markdown("""
         max-width: 100% !important;
     }
     
-    /* 2. FORCE CAMERA WIDGET TO FILL SCREEN AND SET MIN HEIGHT */
+    /* 2. FORCE CAMERA WIDGET TO FILL SCREEN */
     div[data-testid*="stCameraInput"] {
-        width: min(80vw, 400px) !important; /* keep it wide but screen-safe */
+        width: 100% !important;
+        max-width: 100vw !important;
         margin: 0 auto 0.5rem auto !important;
+        overflow: visible !important;
+        display: block !important;
     }
 
-    /* Force a tall portrait frame while keeping consistent ratio */
+    /* Let video fit naturally without forcing aspect ratio */
     div[data-testid*="stCameraInput"] video {
         width: 100% !important;
         height: auto !important;
-        aspect-ratio: 9 / 16 !important;
-        object-fit: cover !important;
+        object-fit: contain !important;
         border-radius: 0 !important;
+        display: block !important;
+    }
+    
+    /* Ensure the button is visible and properly positioned */
+    div[data-testid*="stCameraInput"] button {
+        position: relative !important;
+        z-index: 10 !important;
+        visibility: visible !important;
     }
 
     /* 3. MAKE BUTTONS HUGE & FULL WIDTH */
@@ -218,4 +228,3 @@ else:
 
 # Invisible spacer keeps page scrollable so camera doesn't auto-shrink
 st.markdown("<div style='height:25vh; opacity:0;'>.</div>", unsafe_allow_html=True)
-
