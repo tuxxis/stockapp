@@ -165,4 +165,57 @@ else:
                     target_row = check[0]
                     st.warning(f"🔔 Match: Row {target_row['row']}")
                 else:
-                    st.warning(f"🔔 {len(
+                    st.warning(f"🔔 {len(check)} Duplicates!")
+                    options = {f"Row {m['row']}: {m['current_qty']}x ({m['name'][:15]}...)": m for m in check}
+                    selected_label = st.selectbox("Pick one:", list(options.keys()))
+                    target_row = options[selected_label]
+
+                st.success(f"**{target_row['name']}**")
+                
+                # UPDATE FORM
+                with st.form("update_stock_form"):
+                    col_a, col_b = st.columns(2)
+                    with col_a: 
+                        st.metric("In Stock", target_row['current_qty'])
+                    with col_b: 
+                        add_qty = st.number_input("Add Quantity", value=int(initial_data.get('qty', 1)), min_value=1)
+
+                    submitted = st.form_submit_button("✅ Confirm Update", type="primary", use_container_width=True)
+                    
+                    if submitted:
+                        new_total = target_row['current_qty'] + add_qty
+                        brain.update_item_qty(st.session_state['warehouse_id'], target_row['row'], new_total)
+                        st.toast(f"✅ Added {add_qty}!", icon="✅")
+                        time.sleep(1)
+                        reset_camera()
+
+                if st.button("➕ New Entry Instead", use_container_width=True):
+                    st.session_state['force_create'] = True
+                    st.rerun()
+
+            # --- SCENARIO B: NEW ITEM (CREATE MODE) ---
+            else:
+                if len(check) > 0:
+                    st.info("✨ Creating Duplicate")
+                else:
+                    st.info("✨ New Item Detected")
+                
+                with st.form("new_item_form"):
+                    new_name = st.text_input("Name", value=initial_data['name'])
+                    new_details = st.text_area("Details", value=initial_data.get('details', ''))
+                    new_qty = st.number_input("Qty", value=int(initial_data.get('qty', 1)))
+                    
+                    submitted_new = st.form_submit_button("💾 Save Item", type="primary", use_container_width=True)
+                    
+                    if submitted_new:
+                        save_data = {
+                            "manufacturer": live_manuf,
+                            "ref": live_ref,
+                            "name": new_name,
+                            "details": new_details,
+                            "qty": new_qty
+                        }
+                        brain.save_new_item(st.session_state['warehouse_id'], save_data)
+                        st.toast("✅ Saved!", icon="✅")
+                        time.sleep(1)
+                        reset_camera()
