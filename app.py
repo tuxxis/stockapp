@@ -134,16 +134,16 @@ else:
 st.markdown("---")
     
     # CHANGE THIS LINE 👇 (Add vertical_alignment="center")
-    col1, col2 = st.columns([3, 1], vertical_alignment="center") 
+col1, col2 = st.columns([3, 1], vertical_alignment="center") 
     
-    with col1:
+with col1:
         # I also recommend making the text bigger to match the huge button
-        st.markdown(f"**Location:** {st.session_state['warehouse_name']}")
-    with col2:
-        if st.button("⬅ Change", use_container_width=True):
-            st.session_state['warehouse_id'] = None
-            st.rerun()
-    st.markdown("---")
+    st.markdown(f"**Location:** {st.session_state['warehouse_name']}")
+with col2:
+    if st.button("⬅ Change", use_container_width=True):
+        st.session_state['warehouse_id'] = None
+        st.rerun()
+st.markdown("---")
 
     if img_file:
         # (Rest of the scanning logic remains the same)
