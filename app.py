@@ -35,11 +35,26 @@ st.markdown("""
         display: block !important;
     }
     
-    /* Ensure the button is visible and properly positioned */
+    /* Style the camera buttons properly */
     div[data-testid*="stCameraInput"] button {
         position: relative !important;
         z-index: 10 !important;
         visibility: visible !important;
+    }
+    
+    /* Position the "Switch camera" button better - move it outside or style it */
+    div[data-testid*="stCameraInput"] button[kind="secondary"] {
+        position: absolute !important;
+        top: 0.5rem !important;
+        right: 0.5rem !important;
+        z-index: 100 !important;
+        background: rgba(0, 0, 0, 0.6) !important;
+        color: white !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        padding: 0.5rem 1rem !important;
+        font-size: 0.875rem !important;
+        width: auto !important;
+        height: auto !important;
     }
 
     /* 3. MAKE BUTTONS HUGE & FULL WIDTH */
@@ -131,19 +146,17 @@ else:
 
     # 2. MOVE CONTEXT AND CHANGE BUTTON BELOW THE SCANNER
     # This acts as the new "Footer" area for context and navigation
-st.markdown("---")
+    st.markdown("---")
     
-    # CHANGE THIS LINE 👇 (Add vertical_alignment="center")
-col1, col2 = st.columns([3, 1], vertical_alignment="center") 
+    col1, col2 = st.columns([3, 1], vertical_alignment="center") 
     
-with col1:
-        # I also recommend making the text bigger to match the huge button
-    st.markdown(f"**Location:** {st.session_state['warehouse_name']}")
-with col2:
-    if st.button("⬅ Change", use_container_width=True):
-        st.session_state['warehouse_id'] = None
-        st.rerun()
-st.markdown("---")
+    with col1:
+        st.markdown(f"**Location:** {st.session_state['warehouse_name']}")
+    with col2:
+        if st.button("⬅ Change", use_container_width=True):
+            st.session_state['warehouse_id'] = None
+            st.rerun()
+    st.markdown("---")
 
     if img_file:
         # (Rest of the scanning logic remains the same)
