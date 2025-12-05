@@ -3,6 +3,8 @@ import config
 import brain
 import time
 
+initial_data = None
+
 st.set_page_config(page_title="TUXOSS Inventory", page_icon="🏥", layout="wide")
 
 # 2. MOBILE CSS HACK: Keep it clean and wide
