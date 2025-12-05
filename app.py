@@ -153,7 +153,7 @@ st.markdown("---")
 
         initial_data = st.session_state['scanned_data']
         
-        if initial_data:
+    if initial_data:
             # LIVE INPUTS
             st.write("### Item Verification")
             c1, c2 = st.columns(2)
