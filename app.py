@@ -6,7 +6,7 @@ import time
 # --- FIX: Define this globally so line 169 doesn't crash ---
 initial_data = None
 
-st.set_page_config(page_title="TUXOSS Inventory", page_icon="🏥", layout="wide")
+st.set_page_config(page_title="TUXOSS Inventory", page_icon="🏥")
 
 # 2. MOBILE CSS HACK: Keep it clean and wide
 st.markdown("""
