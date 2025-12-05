@@ -3,6 +3,7 @@ import config
 import brain
 import time
 
+# --- FIX: Define this globally so line 169 doesn't crash ---
 initial_data = None
 
 st.set_page_config(page_title="TUXOSS Inventory", page_icon="🏥", layout="wide")
@@ -12,69 +13,37 @@ st.markdown("""
 <style>
     /* 1. FORCE MOBILE CONTAINER TO BE WIDER */
     .block-container {
-        padding-top: 0.5rem !important;
+        padding-top: 1rem !important;
         padding-bottom: 5rem !important;
-        padding-left: 0rem !important;
-        padding-right: 0rem !important;
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
         max-width: 100% !important;
     }
     
     /* 2. FORCE CAMERA WIDGET TO FILL SCREEN */
     div[data-testid*="stCameraInput"] {
         width: 100% !important;
-        max-width: 100vw !important;
-        margin: 0 auto 0.5rem auto !important;
-        overflow: visible !important;
-        display: block !important;
+        max-width: 100% !important;
+        margin: 0 auto 1rem auto !important;
     }
 
-    /* Let video fit naturally without forcing aspect ratio */
     div[data-testid*="stCameraInput"] video {
         width: 100% !important;
-        height: auto !important;
-        object-fit: contain !important;
-        border-radius: 0 !important;
-        display: block !important;
+        border-radius: 8px !important;
     }
     
-    /* Style the camera buttons properly */
-    div[data-testid*="stCameraInput"] button {
-        position: relative !important;
-        z-index: 10 !important;
-        visibility: visible !important;
-    }
-    
-    /* Position the "Switch camera" button better - move it outside or style it */
-    div[data-testid*="stCameraInput"] button[kind="secondary"] {
-        position: absolute !important;
-        top: 0.5rem !important;
-        right: 0.5rem !important;
-        z-index: 100 !important;
-        background: rgba(0, 0, 0, 0.6) !important;
-        color: white !important;
-        border: 1px solid rgba(255, 255, 255, 0.3) !important;
-        padding: 0.5rem 1rem !important;
-        font-size: 0.875rem !important;
-        width: auto !important;
-        height: auto !important;
-    }
-
     /* 3. MAKE BUTTONS HUGE & FULL WIDTH */
     button {
         height: 3.5rem !important;
         width: 100% !important;
-        font-size: 20px !important;
+        font-size: 18px !important;
+        font-weight: bold !important;
     }
     
-    /* 4. HIDE STREAMLIT CHROME (Footer/Header) */
+    /* 4. HIDE STREAMLIT CHROME */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
-
-    /* 5. Ensure page taller than viewport so camera keeps its size */
-    section.main > div.block-container {
-        min-height: 130vh !important;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -111,7 +80,7 @@ for key, value in session_defaults.items():
     if key not in st.session_state:
         st.session_state[key] = value
 
-# --- FUNCTIONS (Select Warehouse, Reset Camera remain) ---
+# --- FUNCTIONS ---
 def select_warehouse():
     st.title("🏥 TUXOSS Mobile")
     location_names = [""] + list(config.SHEET_LOCATIONS.keys())
@@ -143,25 +112,31 @@ def reset_camera():
 if st.session_state['warehouse_id'] is None:
     select_warehouse()
 else:
-    # 1. THE CAMERA IS NOW AT THE TOP
+    # 1. INFO HEADER (Moved to top so it doesn't clutter the bottom)
+    st.markdown(f"**📍 Location:** {st.session_state['warehouse_name']}")
+
+    # 2. CAMERA INPUT
     img_file = st.camera_input("Scanner", key=f"cam_{st.session_state['scan_counter']}", label_visibility="collapsed")
 
-    # 2. MOVE CONTEXT AND CHANGE BUTTON BELOW THE SCANNER
-    # This acts as the new "Footer" area for context and navigation
-    st.markdown("---")
-    
-    col1, col2 = st.columns([3, 1], vertical_alignment="center") 
+    # 3. FOOTER BUTTONS (Side by Side)
+    # This puts the "Reset/Next" button on the left and "Change" on the right
+    col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown(f"**Location:** {st.session_state['warehouse_name']}")
+        # This button lets you clear the image to scan the next item
+        if st.button("📸 Scan Next", use_container_width=True):
+            reset_camera()
+            
     with col2:
-        if st.button("⬅ Change", use_container_width=True):
+        # This button lets you change warehouse
+        if st.button("⬅ Location", use_container_width=True):
             st.session_state['warehouse_id'] = None
             st.rerun()
+            
     st.markdown("---")
 
+    # 4. LOGIC
     if img_file:
-        # (Rest of the scanning logic remains the same)
         if 'scanned_data' not in st.session_state:
             with st.spinner("Reading Label..."):
                 st.session_state['scanned_data'] = brain.analyze_image(img_file.getvalue())
@@ -190,60 +165,4 @@ else:
                     target_row = check[0]
                     st.warning(f"🔔 Match: Row {target_row['row']}")
                 else:
-                    st.warning(f"🔔 {len(check)} Duplicates!")
-                    options = {f"Row {m['row']}: {m['current_qty']}x ({m['name'][:15]}...)": m for m in check}
-                    selected_label = st.selectbox("Pick one:", list(options.keys()))
-                    target_row = options[selected_label]
-
-                st.success(f"**{target_row['name']}**")
-                
-                # UPDATE FORM
-                with st.form("update_stock_form"):
-                    col_a, col_b = st.columns(2)
-                    with col_a: 
-                        st.metric("In Stock", target_row['current_qty'])
-                    with col_b: 
-                        add_qty = st.number_input("Add Quantity", value=int(initial_data.get('qty', 1)), min_value=1)
-
-                    submitted = st.form_submit_button("✅ Confirm Update", type="primary", use_container_width=True)
-                    
-                    if submitted:
-                        new_total = target_row['current_qty'] + add_qty
-                        brain.update_item_qty(st.session_state['warehouse_id'], target_row['row'], new_total)
-                        st.toast(f"✅ Added {add_qty}!", icon="✅")
-                        time.sleep(1)
-                        reset_camera()
-
-                if st.button("➕ New Entry Instead", use_container_width=True):
-                    st.session_state['force_create'] = True
-                    st.rerun()
-
-            # --- SCENARIO B: NEW ITEM (CREATE MODE) ---
-            else:
-                if len(check) > 0:
-                    st.info("✨ Creating Duplicate")
-                else:
-                    st.info("✨ New Item Detected")
-                
-                with st.form("new_item_form"):
-                    new_name = st.text_input("Name", value=initial_data['name'])
-                    new_details = st.text_area("Details", value=initial_data.get('details', ''))
-                    new_qty = st.number_input("Qty", value=int(initial_data.get('qty', 1)))
-                    
-                    submitted_new = st.form_submit_button("💾 Save Item", type="primary", use_container_width=True)
-                    
-                    if submitted_new:
-                        save_data = {
-                            "manufacturer": live_manuf,
-                            "ref": live_ref,
-                            "name": new_name,
-                            "details": new_details,
-                            "qty": new_qty
-                        }
-                        brain.save_new_item(st.session_state['warehouse_id'], save_data)
-                        st.toast("✅ Saved!", icon="✅")
-                        time.sleep(1)
-                        reset_camera()
-
-# Invisible spacer keeps page scrollable so camera doesn't auto-shrink
-st.markdown("<div style='height:25vh; opacity:0;'>.</div>", unsafe_allow_html=True)
+                    st.warning(f"🔔 {len(
