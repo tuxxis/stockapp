@@ -194,16 +194,23 @@ else:
                     st.rerun()
 
             # --- SCENARIO B: NEW ITEM (CREATE MODE) ---
-            else:
-                if len(check) > 0:
-                    st.info("✨ Creating Duplicate")
-                else:
-                    st.info("✨ New Item Detected")
-                
-                with st.form("new_item_form"):
-                    new_name = st.text_input("Name", value=initial_data['name'])
-                    new_details = st.text_area("Details", value=initial_data.get('details', ''))
-                    new_qty = st.number_input("Qty", value=int(initial_data.get('qty', 1)))
+else:
+    if len(check) > 0:
+        st.info("✨ Creating Duplicate")
+    else:
+        st.info("✨ New Item Detected")
+    
+    with st.form("new_item_form"):
+        new_name = st.text_input("Name", value=initial_data.get('name', ''))
+        new_details = st.text_area("Details", value=initial_data.get('details', ''))
+        
+        # Safely handle qty with fallback
+        try:
+            qty_value = int(initial_data.get('qty', 1) or 1)
+        except (ValueError, TypeError):
+            qty_value = 1
+        
+        new_qty = st.number_input("Qty", value=qty_value, min_value=0, step=1)
                     
                     submitted_new = st.form_submit_button("💾 Save Item", type="primary", use_container_width=True)
                     
